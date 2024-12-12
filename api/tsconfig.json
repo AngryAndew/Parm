@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+      "target": "ES2020",        // Lambda supports Node.js 14.x or higher
+      "module": "commonjs",      // Lambda uses CommonJS modules
+      "outDir": "./dist",        // Compiled files will be placed here
+      "esModuleInterop": true,
+      "strict": true,
+      "skipLibCheck": true
+    },
+    "include": ["src/**/*"],     // Include all files under the "src" directory
+    "exclude": ["node_modules"]  // Exclude node_modules
+  }
+  

@@ -31,9 +31,10 @@ cdk/.env
 
 # CDK asset staging directory
 cdk/.cdk.staging
-<<<<<<< Updated upstream
-cdk/cdk.out
-=======
 cdk/cdk.out
 cdk/cdk.context.json
->>>>>>> Stashed changes
+
+# Api
+api/dist
+api/node_modules
+api/build
