@@ -2,6 +2,7 @@
 import { App } from 'aws-cdk-lib';
 import { NetworkingStack } from './lib/stack/NetworkingStack';
 import { StorageStack } from './lib/stack/StorageStack';
+import { ApiStack } from './lib/stack/ApiStack';
 
 require('dotenv').config();
 
@@ -14,7 +15,7 @@ const app = new App();
 
 const deploymentEnv = {
   account: account,
-   region: region
+  region: region
 };
 
 const storageStack = new StorageStack(app, 'StorageStack', {
@@ -24,9 +25,11 @@ const storageStack = new StorageStack(app, 'StorageStack', {
 
 const networkingStack = new NetworkingStack(app, 'NetworkingStack', {
   domainName: domainName,
-  hostingBucket: storageStack.hostingBucket, 
+  hostingBucket: storageStack.hostingBucket,
   env: deploymentEnv
 });
+
+const apiStack = new ApiStack(app, 'ApiStack', {})
 
 networkingStack.addDependency(storageStack);
 
