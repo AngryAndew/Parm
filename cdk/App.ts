@@ -29,7 +29,10 @@ const networkingStack = new NetworkingStack(app, 'NetworkingStack', {
   env: deploymentEnv
 });
 
-const apiStack = new ApiStack(app, 'ApiStack', {})
+const apiStack = new ApiStack(app, 'ApiStack', {
+  recipeTable: storageStack.recipeTable,
+  env: deploymentEnv
+});
 
 networkingStack.addDependency(storageStack);
 
