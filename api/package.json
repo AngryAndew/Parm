@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && rm -rf build/lambda.zip && zip -r build/lambda.zip dist node_modules package.json",
+    "build": "tsc && mkdir build && zip -r build/lambda.zip dist node_modules package.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

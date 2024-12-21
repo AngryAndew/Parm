@@ -11,7 +11,6 @@ export class ApiStack extends Stack {
     public readonly putRecipe: ApiLambda;
     constructor(scope: Construct, id: string, props: ApiStackProps) {
         super(scope, id, props);
-
         this.putRecipe = this.createPutRecipeLambda();
         this.configurePutRecipePermissions(props.recipeTable);
     }

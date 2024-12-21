@@ -10,7 +10,6 @@ export class ApiLambda extends Construct {
     public readonly lambdaFunction: Function
     constructor(scope: Construct, id: string, props: ApiLambdaProps) {
         super(scope, id);
-
         this.lambdaFunction = this.createlambdaFunction(props.apiPath, props.authEnabled);
     }
     private createlambdaFunction(apiPath: string, authEnabled: boolean): Function {

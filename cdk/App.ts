@@ -34,6 +34,8 @@ const apiStack = new ApiStack(app, 'ApiStack', {
   env: deploymentEnv
 });
 
+const apiStack = new ApiStack(app, 'ApiStack', {})
+
 networkingStack.addDependency(storageStack);
 
 function throwIfMissing(message: string): never {
