@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { AddCircle, RemoveCircle } from "@mui/icons-material";
 import jsPDF from "jspdf";
+import axios from 'axios';
 
 // Custom emerald green theme
 const theme = createTheme({
@@ -35,6 +36,24 @@ function App() {
   const [imagePreview, setImagePreview] = useState(null); // State for image preview
   const [ingredients, setIngredients] = useState([{ name: "", amount: "" }]);
   const [directions, setDirections] = useState([""]);
+
+  const lambdaUrl = '';
+
+  const postRecipe = async (recipe) => {
+    try {
+      const response = await axios.post(lambdaUrl, recipe, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error posting recipe:', error.response?.data || error.message);
+      throw error;
+    }
+  };
 
   const handleIngredientChange = (index, event) => {
     const newIngredients = [...ingredients];
@@ -156,8 +175,15 @@ function App() {
     return doc;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    const recipe = {
+      recipeId: "chicken",
+      userId: "scheme", // Replace with actual user ID if needed
+      description: "test", // Combine all directions into a single description
+    };
+    const result = await postRecipe(recipe);
+    console.log("Recipe posted successfully:", result);
     const doc = generatePDF();
     doc.save("recipe.pdf");
     alert("Recipe PDF has been generated and downloaded!");
