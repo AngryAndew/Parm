@@ -9,6 +9,7 @@ export type Recipe = {
     servings: number,
     rating: number,
     imageUrl: string,
+    s3Location: string,
     ingredients: string[],
-    directions: string
+    directions: string[]
 }

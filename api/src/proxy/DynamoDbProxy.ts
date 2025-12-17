@@ -35,6 +35,7 @@ export class DynamoDbProxy {
             servings: this.convert(recipe.servings),
             rating: this.convert(recipe.rating),
             imageUrl: this.convert(recipe.imageUrl),
+            s3Location: this.convert(recipe.s3Location),
             ingredients: this.convert(recipe.ingredients),
             directions: this.convert(recipe.directions)
         };
