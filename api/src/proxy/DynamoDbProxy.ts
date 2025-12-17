@@ -31,7 +31,7 @@ export class DynamoDbProxy {
             recipeId: this.convert(recipe.recipeId),
             userId: this.convert(recipe.userId),
             recipeDate: this.convert(recipe.recipeDate.toISOString()),
-            cooktime: this.convert(recipe.cooktime),
+            cookTime: this.convert(recipe.cooktime),
             servings: this.convert(recipe.servings),
             rating: this.convert(recipe.rating),
             imageUrl: this.convert(recipe.imageUrl),
