@@ -4,5 +4,11 @@ export type UserId = string;
 export type Recipe = {
     recipeId: RecipeId,
     userId: UserId,
-    description: string
+    recipeDate: Date,
+    cooktime: string,
+    servings: number,
+    rating: number,
+    imageUrl: string,
+    ingredients: string[],
+    directions: string
 }
