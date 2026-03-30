@@ -3,6 +3,7 @@ import { App } from 'aws-cdk-lib';
 import { NetworkingStack } from './lib/stack/NetworkingStack';
 import { StorageStack } from './lib/stack/StorageStack';
 import { ApiStack } from './lib/stack/ApiStack';
+import { AuthStack } from './lib/stack/AuthStack';
 
 require('dotenv').config();
 
@@ -17,6 +18,8 @@ const deploymentEnv = {
   account: account,
   region: region
 };
+
+const authStack = new AuthStack(app, 'AuthStack', { env: deploymentEnv });
 
 const storageStack = new StorageStack(app, 'StorageStack', {
   hostingBucketName: domainName,

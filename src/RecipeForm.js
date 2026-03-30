@@ -8,6 +8,20 @@ import { useSnackbar } from "notistack";
 import { v4 as uuidv4 } from "uuid";
 import { apiPutRecipe, apiUpdateRecipe } from "./api";
 import { generatePDF } from "./pdfGenerator";
+import { useAuth } from "./AuthContext";
+
+const IMAGES_BUCKET_URL = process.env.REACT_APP_IMAGES_BUCKET_URL || "";
+
+const uploadImage = async (file) => {
+  if (!IMAGES_BUCKET_URL) return null;
+  const key = `${Date.now()}-${file.name}`;
+  await fetch(`${IMAGES_BUCKET_URL}/${key}`, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": file.type },
+  });
+  return `${IMAGES_BUCKET_URL}/${key}`;
+};
 
 const emptyForm = {
   title: "", date: "", servings: "", prepTime: "", cookTime: "",
@@ -19,8 +33,10 @@ const emptyForm = {
 
 export default function RecipeForm({ editRecipe, onSaved }) {
   const { enqueueSnackbar } = useSnackbar();
+  const { user, getToken } = useAuth() || {};
   const [form, setForm] = useState(emptyForm);
   const [tagInput, setTagInput] = useState("");
+  const [imageFile, setImageFile] = useState(null);
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -40,6 +56,7 @@ export default function RecipeForm({ editRecipe, onSaved }) {
       });
     } else {
       setForm(emptyForm);
+      setImageFile(null);
       setImage(null);
       setImagePreview(null);
     }
@@ -62,6 +79,7 @@ export default function RecipeForm({ editRecipe, onSaved }) {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setImageFile(file);
     const reader = new FileReader();
     reader.onload = () => { setImage(reader.result); setImagePreview(reader.result); };
     reader.readAsDataURL(file);
@@ -89,23 +107,27 @@ export default function RecipeForm({ editRecipe, onSaved }) {
     }
     setSubmitting(true);
     try {
+      const token = getToken ? await getToken() : null;
+      let imageKey = editRecipe?.imageKey || null;
+      if (imageFile) imageKey = await uploadImage(imageFile);
       const recipe = {
         recipeId: editRecipe?.recipeId ?? `${form.title}-${form.date}`.toLowerCase().replace(/\s+/g, "-"),
-        userId: editRecipe?.userId ?? "default",
+        userId: editRecipe?.userId ?? user?.username ?? "default",
         ...form,
+        imageKey,
         createdAt: editRecipe?.createdAt ?? new Date().toISOString(),
       };
       if (editRecipe) {
-        await apiUpdateRecipe(recipe);
+        await apiUpdateRecipe(recipe, token);
         enqueueSnackbar("Recipe updated!", { variant: "success" });
       } else {
-        await apiPutRecipe(recipe);
+        await apiPutRecipe(recipe, token);
         enqueueSnackbar("Recipe saved!", { variant: "success" });
       }
       const doc = generatePDF({ ...form, image });
       doc.save(`${form.title || "recipe"}.pdf`);
       onSaved?.();
-      if (!editRecipe) { setForm(emptyForm); setImage(null); setImagePreview(null); }
+      if (!editRecipe) { setForm(emptyForm); setImageFile(null); setImage(null); setImagePreview(null); }
     } catch (err) {
       enqueueSnackbar("Failed to save recipe. Check your Lambda URL.", { variant: "error" });
     } finally {
