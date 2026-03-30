@@ -23,7 +23,7 @@ export default function RecipesPage({ onEdit }) {
     setError(null);
     try {
       const data = await apiGetRecipes();
-      setRecipes(data);
+      setRecipes(Array.isArray(data) ? data : []);
     } catch (err) {
       setError("Failed to load recipes. Check REACT_APP_GET_RECIPES_LAMBDA_URL.");
     } finally {
@@ -44,7 +44,7 @@ export default function RecipesPage({ onEdit }) {
     }
   };
 
-  const allTags = [...new Set(recipes.flatMap((r) => r.tags || []))];
+  const allTags = [...new Set((recipes || []).flatMap((r) => r.tags || []))];
 
   const filtered = recipes.filter((r) => {
     const q = search.toLowerCase();
