@@ -1,21 +1,22 @@
-import { aws_route53_targets, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
-import { ARecord, PublicHostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
-import { BlockPublicAccess, Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3';
+import { RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
+import { BlockPublicAccess, Bucket, BucketEncryption, CorsRule, HttpMethods } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import { DynamoTable } from '../construct/Dynamo';
 
 export type StorageStackProps = {
-  hostingBucketName: string
+  hostingBucketName: string;
 } & StackProps;
 
 export class StorageStack extends Stack {
   public readonly hostingBucket: Bucket;
+  public readonly imagesBucket: Bucket;
   public readonly recipeTable: DynamoTable;
+
   constructor(scope: Construct, id: string, props: StorageStackProps) {
     super(scope, id, props);
-
     this.hostingBucket = this.createHostingBucket(props.hostingBucketName);
     this.configureHostingBucketPermissions(this.hostingBucket);
+    this.imagesBucket = this.createImagesBucket();
     this.recipeTable = this.createDynamoTable();
   }
 
@@ -30,10 +31,24 @@ export class StorageStack extends Stack {
     });
   }
 
+  private createImagesBucket(): Bucket {
+    const corRule: CorsRule = {
+      allowedMethods: [HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST],
+      allowedOrigins: ['*'],
+      allowedHeaders: ['*'],
+    };
+    return new Bucket(this, 'imagesBucket', {
+      encryption: BucketEncryption.S3_MANAGED,
+      removalPolicy: RemovalPolicy.DESTROY,
+      blockPublicAccess: new BlockPublicAccess({ restrictPublicBuckets: false, blockPublicPolicy: false }),
+      cors: [corRule],
+    });
+  }
+
   private createDynamoTable(): DynamoTable {
     return new DynamoTable(this, 'recipeTable', {
       partitionKey: 'userId',
-      sortKey: 'recipeId'
+      sortKey: 'recipeId',
     });
   }
 

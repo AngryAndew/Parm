@@ -7,12 +7,11 @@ const corsHeaders = {
     'Content-Type': 'application/json',
 };
 
-export const putRecipe: Handler = async (event, context) => {
+export const getRecipes: Handler = async (event, context) => {
     const dynamoProxy = new DynamoDbProxy('us-east-1');
     try {
-        const recipe = JSON.parse(event.body);
-        await dynamoProxy.addNewRecipe(recipe);
-        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ success: true }) };
+        const recipes = await dynamoProxy.getAllRecipes();
+        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify(recipes) };
     } catch (error: any) {
         return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: "Internal Server Error" }) };
     }
