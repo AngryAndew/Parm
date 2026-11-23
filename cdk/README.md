@@ -33,3 +33,13 @@ Copy the `CognitoAuthority`, `UserPoolClientId` and `CognitoDomain` outputs into
 the root `.env` as `REACT_APP_COGNITO_AUTHORITY`, `REACT_APP_COGNITO_CLIENT_ID`
 and `REACT_APP_COGNITO_DOMAIN`. Login redirects are allowed back to
 `https://<DOMAIN_NAME>/` and `http://localhost:3000/`.
+
+## HTTPS and the website
+
+`NetworkingStack` must be deployed to `us-east-1` (CloudFront only accepts ACM
+certificates from that region). It creates the certificate (validated through
+your Route 53 zone), a CloudFront distribution in front of the now-private site
+bucket, and A/AAAA records for the domain.
+
+To publish the React app, run `./deploy_site.sh` from the repo root. It builds
+the app, syncs `build/` to the site bucket and clears the CloudFront cache.
