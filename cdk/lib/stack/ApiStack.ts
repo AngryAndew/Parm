@@ -12,7 +12,7 @@ export class ApiStack extends Stack {
     public readonly importRecipe: ApiLambda;
     constructor(scope: Construct, id: string, props: ApiStackProps) {
         super(scope, id, props);
-        this.putRecipe = this.createPutRecipeLambda();
+        this.putRecipe = this.createPutRecipeLambda(props.recipeTable);
         this.configurePutRecipePermissions(props.recipeTable);
         this.importRecipe = this.createImportRecipeLambda();
 
@@ -25,10 +25,13 @@ export class ApiStack extends Stack {
         recipeTable.table.grantWriteData(this.putRecipe.lambdaFunction.role!!);
     }
 
-    private createPutRecipeLambda(): ApiLambda {
+    private createPutRecipeLambda(recipeTable: DynamoTable): ApiLambda {
         return new ApiLambda(this, 'putRecipe', {
             apiPath: 'putRecipe',
-            authEnabled: false
+            authEnabled: false,
+            environment: {
+                RECIPE_TABLE_NAME: recipeTable.table.tableName
+            }
         });
     }
 
