@@ -1,29 +1,37 @@
-import { Code, Function, FunctionUrlAuthType, Runtime } from "aws-cdk-lib/aws-lambda";
+import { Duration } from "aws-cdk-lib";
+import { Code, Function, FunctionUrl, FunctionUrlAuthType, HttpMethod, Runtime } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 
 export type ApiLambdaProps = {
     apiPath: string,
-    authEnabled: boolean
+    authEnabled: boolean,
+    timeoutSeconds?: number,
+    memorySize?: number
 };
 
 export class ApiLambda extends Construct {
     public readonly lambdaFunction: Function
+    public readonly functionUrl: FunctionUrl
     constructor(scope: Construct, id: string, props: ApiLambdaProps) {
         super(scope, id);
-        this.lambdaFunction = this.createlambdaFunction(props.apiPath, props.authEnabled);
-    }
-    private createlambdaFunction(apiPath: string, authEnabled: boolean): Function {
-        const func = new Function(this, 'Function', {
-            runtime: Runtime.NODEJS_LATEST,
-            handler: `dist/index.${apiPath}`,
-            code: Code.fromAsset('../api/build/lambda.zip'),
+        this.lambdaFunction = this.createlambdaFunction(props);
+        this.functionUrl = this.lambdaFunction.addFunctionUrl({
+            authType: props.authEnabled ? FunctionUrlAuthType.AWS_IAM : FunctionUrlAuthType.NONE,
+            // Lets the React site (a different origin) call this URL from the browser.
+            cors: {
+                allowedOrigins: ['*'],
+                allowedMethods: [HttpMethod.POST, HttpMethod.GET],
+                allowedHeaders: ['Content-Type'],
+            },
         });
-        func.addFunctionUrl({
-            authType: authEnabled ? FunctionUrlAuthType.AWS_IAM : FunctionUrlAuthType.NONE
-        })
-
-        return func;
+    }
+    private createlambdaFunction(props: ApiLambdaProps): Function {
+        return new Function(this, 'Function', {
+            runtime: Runtime.NODEJS_LATEST,
+            handler: `dist/index.${props.apiPath}`,
+            code: Code.fromAsset('../api/build/lambda.zip'),
+            timeout: Duration.seconds(props.timeoutSeconds ?? 3),
+            memorySize: props.memorySize ?? 128,
+        });
     }
 }
-
-
