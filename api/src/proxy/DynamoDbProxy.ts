@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { Recipe } from "../model/Recipe";
 
 export class DynamoDbProxy {
@@ -22,5 +22,22 @@ export class DynamoDbProxy {
             TableName: this.recipeTableName,
             Item: recipe,
         }));
+    }
+
+    // All recipes for one user/household. Query reads only that partition (cheaper than Scan).
+    async listRecipes(userId: string): Promise<Recipe[]> {
+        const recipes: Recipe[] = [];
+        let startKey: Record<string, any> | undefined;
+        do {
+            const page = await this.client.send(new QueryCommand({
+                TableName: this.recipeTableName,
+                KeyConditionExpression: "userId = :userId",
+                ExpressionAttributeValues: { ":userId": userId },
+                ExclusiveStartKey: startKey,
+            }));
+            recipes.push(...((page.Items ?? []) as Recipe[]));
+            startKey = page.LastEvaluatedKey;
+        } while (startKey);
+        return recipes;
     }
 }
