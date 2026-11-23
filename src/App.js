@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Container,
   Typography,
@@ -19,6 +19,9 @@ import { AddCircle, RemoveCircle } from "@mui/icons-material";
 import jsPDF from "jspdf";
 import axios from 'axios';
 import RecipeList from "./RecipeList";
+import api, { setAccessToken } from "./api";
+import { useAuth } from "react-oidc-context";
+import { cognitoLogoutUrl } from "./authConfig";
 
 // Custom emerald green theme
 const theme = createTheme({
@@ -36,6 +39,12 @@ const theme = createTheme({
 });
 
 function App() {
+  const auth = useAuth();
+  // Keep the API client's token in sync with the login (it refreshes automatically).
+  useEffect(() => {
+    setAccessToken(auth.user?.access_token ?? null);
+  }, [auth.user]);
+
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [image, setImage] = useState(null);
@@ -58,7 +67,7 @@ function App() {
     if (!dataUrl) return undefined;
     const blob = await (await fetch(dataUrl)).blob();
     if (blob.size > MAX_PHOTO_BYTES) throw new Error("Photo is larger than 10 MB.");
-    const { data } = await axios.post(uploadUrlLambdaUrl, { contentType: blob.type }, {
+    const { data } = await api.post(uploadUrlLambdaUrl, { contentType: blob.type }, {
       headers: { 'Content-Type': 'application/json' },
     });
     await axios.put(data.uploadUrl, blob, { headers: { 'Content-Type': blob.type } });
@@ -78,7 +87,7 @@ function App() {
     setImporting(true);
     setImportMessage(null);
     try {
-      const { data } = await axios.post(importLambdaUrl, { url: importUrl.trim() }, {
+      const { data } = await api.post(importLambdaUrl, { url: importUrl.trim() }, {
         headers: { 'Content-Type': 'application/json' },
       });
       setTitle(data.title || "");
@@ -106,7 +115,7 @@ function App() {
 
   const postRecipe = async (recipe) => {
     try {
-      const response = await axios.post(lambdaUrl, recipe, {
+      const response = await api.post(lambdaUrl, recipe, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -288,9 +297,46 @@ function App() {
     );
   };
 
+  const signOut = async () => {
+    await auth.removeUser();
+    window.location.href = cognitoLogoutUrl();
+  };
+
+  if (auth.isLoading || auth.activeNavigator) {
+    return (
+      <ThemeProvider theme={theme}>
+        <Box textAlign="center" mt={10}><CircularProgress /></Box>
+      </ThemeProvider>
+    );
+  }
+
+  if (!auth.isAuthenticated) {
+    return (
+      <ThemeProvider theme={theme}>
+        <Container maxWidth="sm" sx={{ textAlign: "center", mt: 10 }}>
+          <Typography variant="h4" gutterBottom sx={{ color: "primary.main" }}>
+            Recipe Creator
+          </Typography>
+          {auth.error && (
+            <Alert severity="error" sx={{ mb: 2 }}>Sign-in failed: {auth.error.message}</Alert>
+          )}
+          <Button variant="contained" size="large" onClick={() => auth.signinRedirect()}>
+            Sign in
+          </Button>
+        </Container>
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <Container maxWidth="sm">
+        <Box textAlign="right" mt={1}>
+          <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
+            {auth.user?.profile?.email}
+          </Typography>
+          <Button size="small" onClick={signOut}>Sign out</Button>
+        </Box>
         <Typography
           variant="h4"
           align="center"

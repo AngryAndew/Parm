@@ -15,7 +15,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import axios from "axios";
+import api from "./api";
 
 // Function URL printed as "GetRecipesUrl" after `cdk deploy ApiStack`
 const getRecipesUrl = process.env.REACT_APP_GET_RECIPES_URL || "";
@@ -78,7 +78,7 @@ function RecipeList() {
       setLoading(false);
       return;
     }
-    axios
+    api
       .get(getRecipesUrl)
       .then(({ data }) => setRecipes(data.recipes ?? []))
       .catch((err) => setError(err.response?.data?.error || "Couldn't load recipes."))

@@ -3,6 +3,7 @@ import { App } from 'aws-cdk-lib';
 import { NetworkingStack } from './lib/stack/NetworkingStack';
 import { StorageStack } from './lib/stack/StorageStack';
 import { ApiStack } from './lib/stack/ApiStack';
+import { AuthStack } from './lib/stack/AuthStack';
 
 require('dotenv').config();
 
@@ -29,9 +30,17 @@ const networkingStack = new NetworkingStack(app, 'NetworkingStack', {
   env: deploymentEnv
 });
 
+const authStack = new AuthStack(app, 'AuthStack', {
+  domainName: domainName,
+  authDomainPrefix: `parm-${disambiguator}`.toLowerCase(),
+  env: deploymentEnv
+});
+
 const apiStack = new ApiStack(app, 'ApiStack', {
   recipeTable: storageStack.recipeTable,
   imagesBucket: storageStack.imagesBucket,
+  userPool: authStack.userPool,
+  userPoolClient: authStack.userPoolClient,
   env: deploymentEnv
 });
 

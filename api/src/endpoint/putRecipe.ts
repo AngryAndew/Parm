@@ -38,7 +38,7 @@ export const putRecipe: Handler = async (event) => {
 
     const now = new Date().toISOString();
     const recipe: Recipe = {
-        userId: body.userId || DEFAULT_USER_ID,
+        userId: DEFAULT_USER_ID, // one shared household partition; set by the server, not the browser
         recipeId: body.recipeId || randomUUID(), // pass an existing recipeId to update a recipe
         title: body.title.trim(),
         date: body.date || now.slice(0, 10),
