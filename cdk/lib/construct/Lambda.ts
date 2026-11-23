@@ -6,7 +6,8 @@ export type ApiLambdaProps = {
     apiPath: string,
     authEnabled: boolean,
     timeoutSeconds?: number,
-    memorySize?: number
+    memorySize?: number,
+    environment?: Record<string, string>
 };
 
 export class ApiLambda extends Construct {
@@ -32,6 +33,7 @@ export class ApiLambda extends Construct {
             code: Code.fromAsset('../api/build/lambda.zip'),
             timeout: Duration.seconds(props.timeoutSeconds ?? 3),
             memorySize: props.memorySize ?? 128,
+            environment: props.environment,
         });
     }
 }

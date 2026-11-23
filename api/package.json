@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.709.0",
+    "@aws-sdk/client-dynamodb": "^3.1175.0",
+    "@aws-sdk/lib-dynamodb": "^3.1175.0",
     "@types/aws-lambda": "^8.10.103",
     "@types/node": "^18.11.9",
     "aws-sdk": "^2.1362.0",

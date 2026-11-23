@@ -39,6 +39,9 @@ function App() {
   const [imagePreview, setImagePreview] = useState(null); // State for image preview
   const [ingredients, setIngredients] = useState([{ name: "", amount: "" }]);
   const [directions, setDirections] = useState([""]);
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState(null); // { severity, text }
 
   const lambdaUrl = process.env.REACT_APP_PUT_RECIPE_URL || '';
   // Function URL printed as "ImportRecipeUrl" after `cdk deploy ApiStack`
@@ -63,6 +66,7 @@ function App() {
       setTitle(data.title || "");
       setIngredients(data.ingredients?.length ? data.ingredients : [{ name: "", amount: "" }]);
       setDirections(data.directions?.length ? data.directions : [""]);
+      setSourceUrl(data.sourceUrl || importUrl.trim());
       if (!date) setDate(new Date().toISOString().slice(0, 10));
       if (data.image) {
         setImage(data.image);
@@ -218,18 +222,42 @@ function App() {
     return doc;
   };
 
+  const resetForm = () => {
+    setTitle("");
+    setDate("");
+    setImage(null);
+    setImagePreview(null);
+    setIngredients([{ name: "", amount: "" }]);
+    setDirections([""]);
+    setSourceUrl("");
+    setImportUrl("");
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     const recipe = {
-      recipeId: "chicken",
-      userId: "scheme", // Replace with actual user ID if needed
-      description: "test", // Combine all directions into a single description
+      title,
+      date,
+      ingredients: ingredients.filter((i) => i.name.trim()),
+      directions: directions.filter((d) => d.trim()),
+      sourceUrl: sourceUrl || undefined,
     };
-    const result = await postRecipe(recipe);
-    console.log("Recipe posted successfully:", result);
-    const doc = generatePDF();
-    doc.save("recipe.pdf");
-    alert("Recipe PDF has been generated and downloaded!");
+    setSaving(true);
+    setSaveMessage(null);
+    try {
+      const result = await postRecipe(recipe);
+      const doc = generatePDF();
+      doc.save(`${title || "recipe"}.pdf`);
+      setSaveMessage({ severity: "success", text: `Saved "${result.recipe?.title ?? title}". The PDF has been downloaded.` });
+      resetForm();
+    } catch (error) {
+      setSaveMessage({
+        severity: "error",
+        text: error.response?.data?.error || "Couldn't save the recipe. Nothing was lost; try again.",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handlePreview = () => {
@@ -427,9 +455,14 @@ function App() {
             </Button>
           </Box>
 
+          {saveMessage && (
+            <Alert severity={saveMessage.severity} sx={{ mt: 3 }} onClose={() => setSaveMessage(null)}>
+              {saveMessage.text}
+            </Alert>
+          )}
           <Box mt={4} textAlign="center">
-            <Button type="submit" variant="contained" color="primary" sx={{ mr: 2 }}>
-              Submit & Download PDF
+            <Button type="submit" variant="contained" color="primary" sx={{ mr: 2 }} disabled={saving}>
+              {saving ? "Saving..." : "Save & Download PDF"}
             </Button>
             <Button variant="outlined" color="secondary" onClick={handlePreview}>
               Preview PDF
