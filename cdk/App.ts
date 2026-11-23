@@ -4,6 +4,7 @@ import { NetworkingStack } from './lib/stack/NetworkingStack';
 import { StorageStack } from './lib/stack/StorageStack';
 import { ApiStack } from './lib/stack/ApiStack';
 import { AuthStack } from './lib/stack/AuthStack';
+import { CiStack } from './lib/stack/CiStack';
 
 require('dotenv').config();
 
@@ -45,6 +46,16 @@ const apiStack = new ApiStack(app, 'ApiStack', {
 });
 
 networkingStack.addDependency(storageStack);
+
+// GitHub Actions deploy role. Optional .env settings:
+//   GITHUB_REPO (default AngryAndew/Parm), DEPLOY_BRANCH (default mainline),
+//   GITHUB_OIDC_PROVIDER_ARN (if your account already has the GitHub OIDC provider)
+new CiStack(app, 'CiStack', {
+  githubRepo: process.env.GITHUB_REPO ?? 'AngryAndew/Parm',
+  deployBranch: process.env.DEPLOY_BRANCH ?? 'mainline',
+  existingOidcProviderArn: process.env.GITHUB_OIDC_PROVIDER_ARN || undefined,
+  env: deploymentEnv
+});
 
 function throwIfMissing(message: string): never {
   throw new Error(message);
