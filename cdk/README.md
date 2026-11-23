@@ -43,3 +43,22 @@ bucket, and A/AAAA records for the domain.
 
 To publish the React app, run `./deploy_site.sh` from the repo root. It builds
 the app, syncs `build/` to the site bucket and clears the CloudFront cache.
+
+## Automatic deploys (GitHub Actions)
+
+`.github/workflows/deploy.yml` deploys every push to `mainline`: it builds the
+Lambdas, runs `cdk deploy --all`, then builds and uploads the website. It signs
+in to AWS with GitHub's OIDC token, so no AWS keys are stored in GitHub.
+
+One-time setup:
+
+1. Deploy `CiStack` once from your machine: `cdk deploy CiStack`. If your account
+   already has the `token.actions.githubusercontent.com` OIDC provider, first set
+   `GITHUB_OIDC_PROVIDER_ARN=<its ARN>` in `cdk/.env`.
+2. In GitHub → Settings → Secrets and variables → Actions:
+   - Secret `AWS_DEPLOY_ROLE_ARN` = the `GithubDeployRoleArn` output.
+   - Variables `DEPLOYMENT_DISAMBIGUATOR`, `DEPLOYMENT_ACCOUNT`,
+     `DEPLOYMENT_REGION`, `DOMAIN_NAME` (same values as `cdk/.env`), plus
+     `GITHUB_OIDC_PROVIDER_ARN` if you set it above.
+
+You can also run the workflow by hand from the Actions tab.

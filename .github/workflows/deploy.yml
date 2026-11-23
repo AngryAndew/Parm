@@ -1,0 +1,60 @@
+name: Deploy
+
+on:
+  push:
+    branches: [mainline]
+  workflow_dispatch:
+
+# Only one deploy at a time; a newer push waits for the running one.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  id-token: write   # lets the job get a GitHub OIDC token to assume the AWS role
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.DEPLOYMENT_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.DEPLOYMENT_REGION }}
+
+      - name: Write cdk/.env
+        run: |
+          cat > cdk/.env <<ENV
+          DEPLOYMENT_DISAMBIGUATOR=${{ vars.DEPLOYMENT_DISAMBIGUATOR }}
+          DEPLOYMENT_ACCOUNT=${{ vars.DEPLOYMENT_ACCOUNT }}
+          DEPLOYMENT_REGION=${{ vars.DEPLOYMENT_REGION }}
+          DOMAIN_NAME=${{ vars.DOMAIN_NAME }}
+          GITHUB_OIDC_PROVIDER_ARN=${{ vars.GITHUB_OIDC_PROVIDER_ARN }}
+          ENV
+
+      - name: Build Lambda bundle
+        working-directory: api
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy infrastructure
+        working-directory: cdk
+        run: |
+          npm ci
+          npx cdk deploy --all --require-approval never
+
+      - name: Deploy website
+        run: |
+          ./write_frontend_env.sh
+          ./deploy_site.sh
