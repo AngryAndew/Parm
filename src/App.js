@@ -46,6 +46,20 @@ function App() {
   const lambdaUrl = process.env.REACT_APP_PUT_RECIPE_URL || '';
   // Function URL printed as "ImportRecipeUrl" after `cdk deploy ApiStack`
   const importLambdaUrl = process.env.REACT_APP_IMPORT_RECIPE_URL || '';
+  const uploadUrlLambdaUrl = process.env.REACT_APP_GET_UPLOAD_URL || '';
+  const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+
+  // Uploads the photo (a data URL) to S3 and returns its key, or undefined if there's no photo.
+  const uploadPhoto = async (dataUrl) => {
+    if (!dataUrl) return undefined;
+    const blob = await (await fetch(dataUrl)).blob();
+    if (blob.size > MAX_PHOTO_BYTES) throw new Error("Photo is larger than 10 MB.");
+    const { data } = await axios.post(uploadUrlLambdaUrl, { contentType: blob.type }, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    await axios.put(data.uploadUrl, blob, { headers: { 'Content-Type': blob.type } });
+    return data.imageKey;
+  };
 
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
@@ -245,6 +259,7 @@ function App() {
     setSaving(true);
     setSaveMessage(null);
     try {
+      recipe.imageKey = await uploadPhoto(image);
       const result = await postRecipe(recipe);
       const doc = generatePDF();
       doc.save(`${title || "recipe"}.pdf`);
@@ -253,7 +268,7 @@ function App() {
     } catch (error) {
       setSaveMessage({
         severity: "error",
-        text: error.response?.data?.error || "Couldn't save the recipe. Nothing was lost; try again.",
+        text: error.response?.data?.error || error.message || "Couldn't save the recipe. Nothing was lost; try again.",
       });
     } finally {
       setSaving(false);
@@ -346,7 +361,7 @@ function App() {
             Upload Image
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png"
               hidden
               onChange={handleImageChange}
             />
