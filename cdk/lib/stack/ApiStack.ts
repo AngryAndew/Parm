@@ -2,23 +2,28 @@ import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { ApiLambda } from '../construct/Lambda';
 import { DynamoTable } from '../construct/Dynamo';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
 
 export type ApiStackProps = {
-    recipeTable: DynamoTable
+    recipeTable: DynamoTable,
+    imagesBucket: Bucket
 } & StackProps;
 
 export class ApiStack extends Stack {
     public readonly putRecipe: ApiLambda;
     public readonly importRecipe: ApiLambda;
+    public readonly getUploadUrl: ApiLambda;
     constructor(scope: Construct, id: string, props: ApiStackProps) {
         super(scope, id, props);
         this.putRecipe = this.createPutRecipeLambda(props.recipeTable);
         this.configurePutRecipePermissions(props.recipeTable);
         this.importRecipe = this.createImportRecipeLambda();
+        this.getUploadUrl = this.createGetUploadUrlLambda(props.imagesBucket);
 
         // Printed after `cdk deploy` — paste these into the React app's .env file.
         new CfnOutput(this, 'PutRecipeUrl', { value: this.putRecipe.functionUrl.url });
         new CfnOutput(this, 'ImportRecipeUrl', { value: this.importRecipe.functionUrl.url });
+        new CfnOutput(this, 'GetUploadUrl', { value: this.getUploadUrl.functionUrl.url });
     }
 
     private configurePutRecipePermissions(recipeTable: DynamoTable) {
@@ -44,5 +49,18 @@ export class ApiStack extends Stack {
             timeoutSeconds: 20,
             memorySize: 256
         });
+    }
+
+    // Hands the browser a short-lived signed URL to upload a recipe photo to S3.
+    private createGetUploadUrlLambda(imagesBucket: Bucket): ApiLambda {
+        const lambda = new ApiLambda(this, 'getUploadUrl', {
+            apiPath: 'getUploadUrl',
+            authEnabled: false,
+            environment: {
+                IMAGES_BUCKET_NAME: imagesBucket.bucketName
+            }
+        });
+        imagesBucket.grantPut(lambda.lambdaFunction);
+        return lambda;
     }
 }

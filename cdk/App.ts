@@ -31,6 +31,7 @@ const networkingStack = new NetworkingStack(app, 'NetworkingStack', {
 
 const apiStack = new ApiStack(app, 'ApiStack', {
   recipeTable: storageStack.recipeTable,
+  imagesBucket: storageStack.imagesBucket,
   env: deploymentEnv
 });
 
