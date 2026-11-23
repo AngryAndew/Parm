@@ -3,10 +3,13 @@ import { Construct } from 'constructs';
 import { ApiLambda } from '../construct/Lambda';
 import { DynamoTable } from '../construct/Dynamo';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
+import { UserPool, UserPoolClient } from 'aws-cdk-lib/aws-cognito';
 
 export type ApiStackProps = {
     recipeTable: DynamoTable,
-    imagesBucket: Bucket
+    imagesBucket: Bucket,
+    userPool: UserPool,
+    userPoolClient: UserPoolClient
 } & StackProps;
 
 export class ApiStack extends Stack {
@@ -14,8 +17,15 @@ export class ApiStack extends Stack {
     public readonly importRecipe: ApiLambda;
     public readonly getUploadUrl: ApiLambda;
     public readonly getRecipes: ApiLambda;
+    // Every Lambda checks the caller's Cognito token, so each one needs these.
+    private readonly authEnvironment: Record<string, string>;
+
     constructor(scope: Construct, id: string, props: ApiStackProps) {
         super(scope, id, props);
+        this.authEnvironment = {
+            COGNITO_USER_POOL_ID: props.userPool.userPoolId,
+            COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId
+        };
         this.putRecipe = this.createPutRecipeLambda(props.recipeTable);
         this.configurePutRecipePermissions(props.recipeTable);
         this.importRecipe = this.createImportRecipeLambda();
@@ -36,8 +46,9 @@ export class ApiStack extends Stack {
     private createPutRecipeLambda(recipeTable: DynamoTable): ApiLambda {
         return new ApiLambda(this, 'putRecipe', {
             apiPath: 'putRecipe',
-            authEnabled: false,
+            authEnabled: false, // IAM auth off; the Lambda verifies the Cognito token itself
             environment: {
+                ...this.authEnvironment,
                 RECIPE_TABLE_NAME: recipeTable.table.tableName
             }
         });
@@ -48,9 +59,10 @@ export class ApiStack extends Stack {
     private createImportRecipeLambda(): ApiLambda {
         return new ApiLambda(this, 'importRecipe', {
             apiPath: 'importRecipe',
-            authEnabled: false,
+            authEnabled: false, // IAM auth off; the Lambda verifies the Cognito token itself
             timeoutSeconds: 20,
-            memorySize: 256
+            memorySize: 256,
+            environment: this.authEnvironment
         });
     }
 
@@ -58,8 +70,9 @@ export class ApiStack extends Stack {
     private createGetUploadUrlLambda(imagesBucket: Bucket): ApiLambda {
         const lambda = new ApiLambda(this, 'getUploadUrl', {
             apiPath: 'getUploadUrl',
-            authEnabled: false,
+            authEnabled: false, // IAM auth off; the Lambda verifies the Cognito token itself
             environment: {
+                ...this.authEnvironment,
                 IMAGES_BUCKET_NAME: imagesBucket.bucketName
             }
         });
@@ -71,9 +84,10 @@ export class ApiStack extends Stack {
     private createGetRecipesLambda(recipeTable: DynamoTable, imagesBucket: Bucket): ApiLambda {
         const lambda = new ApiLambda(this, 'getRecipes', {
             apiPath: 'getRecipes',
-            authEnabled: false,
+            authEnabled: false, // IAM auth off; the Lambda verifies the Cognito token itself
             timeoutSeconds: 10,
             environment: {
+                ...this.authEnvironment,
                 RECIPE_TABLE_NAME: recipeTable.table.tableName,
                 IMAGES_BUCKET_NAME: imagesBucket.bucketName
             }

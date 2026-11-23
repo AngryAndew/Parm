@@ -17,7 +17,7 @@ const respond = (statusCode: number, body: unknown) => ({
 // Returns every saved recipe, newest first. Each one with a photo gets a
 // temporary imageUrl the browser can load from the private images bucket.
 export const getRecipes: Handler = async (event) => {
-    const userId = event?.queryStringParameters?.userId || DEFAULT_USER_ID;
+    const userId = DEFAULT_USER_ID; // shared household partition
     const bucket = process.env.IMAGES_BUCKET_NAME;
     try {
         const recipes = await new DynamoDbProxy().listRecipes(userId);

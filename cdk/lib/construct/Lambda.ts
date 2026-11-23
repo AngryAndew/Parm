@@ -22,7 +22,7 @@ export class ApiLambda extends Construct {
             cors: {
                 allowedOrigins: ['*'],
                 allowedMethods: [HttpMethod.POST, HttpMethod.GET],
-                allowedHeaders: ['Content-Type'],
+                allowedHeaders: ['Content-Type', 'Authorization'],
             },
         });
     }
