@@ -9,6 +9,9 @@ import {
   Grid,
   ThemeProvider,
   createTheme,
+  Alert,
+  CircularProgress,
+  Divider,
 } from "@mui/material";
 import { AddCircle, RemoveCircle } from "@mui/icons-material";
 import jsPDF from "jspdf";
@@ -37,7 +40,47 @@ function App() {
   const [ingredients, setIngredients] = useState([{ name: "", amount: "" }]);
   const [directions, setDirections] = useState([""]);
 
-  const lambdaUrl = '';
+  const lambdaUrl = process.env.REACT_APP_PUT_RECIPE_URL || '';
+  // Function URL printed as "ImportRecipeUrl" after `cdk deploy ApiStack`
+  const importLambdaUrl = process.env.REACT_APP_IMPORT_RECIPE_URL || '';
+
+  const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState(null); // { severity, text }
+
+  const handleImport = async () => {
+    if (!importUrl.trim()) return;
+    if (!importLambdaUrl) {
+      setImportMessage({ severity: "error", text: "REACT_APP_IMPORT_RECIPE_URL isn't set in .env yet." });
+      return;
+    }
+    setImporting(true);
+    setImportMessage(null);
+    try {
+      const { data } = await axios.post(importLambdaUrl, { url: importUrl.trim() }, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      setTitle(data.title || "");
+      setIngredients(data.ingredients?.length ? data.ingredients : [{ name: "", amount: "" }]);
+      setDirections(data.directions?.length ? data.directions : [""]);
+      if (!date) setDate(new Date().toISOString().slice(0, 10));
+      if (data.image) {
+        setImage(data.image);
+        setImagePreview(data.image);
+      }
+      setImportMessage({
+        severity: "success",
+        text: `Imported ${data.ingredients?.length ?? 0} ingredients and ${data.directions?.length ?? 0} steps. Look it over and edit anything before saving.`,
+      });
+    } catch (error) {
+      setImportMessage({
+        severity: "error",
+        text: error.response?.data?.error || "Couldn't import that recipe. Try another link or enter it by hand.",
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const postRecipe = async (recipe) => {
     try {
@@ -209,6 +252,39 @@ function App() {
         >
           Recipe Creator
         </Typography>
+        {/* Import from a recipe website */}
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center", mt: 2 }}>
+          <TextField
+            fullWidth
+            label="Paste a recipe link to import"
+            placeholder="https://www.example.com/best-chili-recipe"
+            value={importUrl}
+            onChange={(e) => setImportUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleImport();
+              }
+            }}
+            color="primary"
+            size="small"
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleImport}
+            disabled={importing || !importUrl.trim()}
+            sx={{ minWidth: 100 }}
+          >
+            {importing ? <CircularProgress size={22} color="inherit" /> : "Import"}
+          </Button>
+        </Box>
+        {importMessage && (
+          <Alert severity={importMessage.severity} sx={{ mt: 1 }} onClose={() => setImportMessage(null)}>
+            {importMessage.text}
+          </Alert>
+        )}
+        <Divider sx={{ my: 2 }}>or enter it yourself</Divider>
         <Box component="form" onSubmit={handleSubmit}>
           <TextField
             fullWidth
