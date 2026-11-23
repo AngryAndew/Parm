@@ -12,10 +12,13 @@ import {
   Alert,
   CircularProgress,
   Divider,
+  Tab,
+  Tabs,
 } from "@mui/material";
 import { AddCircle, RemoveCircle } from "@mui/icons-material";
 import jsPDF from "jspdf";
 import axios from 'axios';
+import RecipeList from "./RecipeList";
 
 // Custom emerald green theme
 const theme = createTheme({
@@ -40,6 +43,7 @@ function App() {
   const [ingredients, setIngredients] = useState([{ name: "", amount: "" }]);
   const [directions, setDirections] = useState([""]);
   const [sourceUrl, setSourceUrl] = useState("");
+  const [tab, setTab] = useState(0); // 0 = add a recipe, 1 = browse saved recipes
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null); // { severity, text }
 
@@ -295,6 +299,12 @@ function App() {
         >
           Recipe Creator
         </Typography>
+        <Tabs value={tab} onChange={(e, value) => setTab(value)} centered sx={{ mb: 1 }}>
+          <Tab label="Add a recipe" />
+          <Tab label="Our recipes" />
+        </Tabs>
+        {tab === 0 && (
+        <>
         {/* Import from a recipe website */}
         <Box sx={{ display: "flex", gap: 1, alignItems: "center", mt: 2 }}>
           <TextField
@@ -484,6 +494,9 @@ function App() {
             </Button>
           </Box>
         </Box>
+        </>
+        )}
+        {tab === 1 && <RecipeList />}
       </Container>
     </ThemeProvider>
   );
